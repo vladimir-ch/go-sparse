@@ -197,7 +197,7 @@ func TestScatter(t *testing.T) {
 			want: []float64{1, 0, 0, 0, 2, 0, 3, 0},
 		},
 	} {
-		Scatter(test.x, test.y, test.incy, test.index)
+		Scatter(test.x, test.index, test.y, test.incy)
 		if !reflect.DeepEqual(test.y, test.want) {
 			t.Errorf("want = %v, got %v\n", test.want, test.y)
 		}
