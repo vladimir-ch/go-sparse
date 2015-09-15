@@ -71,13 +71,23 @@ func (m *CSR) At(r, c int) float64 {
 	return 0
 }
 
-func csrMulMatVec(alpha float64, a *CSR, x []float64, incx int, y []float64, incy int) {
+func csrMulMatVec(alpha float64, transA bool, a *CSR, x []float64, incx int, y []float64, incy int) {
 	r, _ := a.Dims()
-	for i := 0; i < r; i++ {
-		sum := y[i*incy]
-		for j := a.rowIndex[i]; j < a.rowIndex[i+1]; j++ {
-			sum += alpha * a.values[j] * x[a.columns[j]*incx]
+	if transA {
+		for i := 0; i < r; i++ {
+			start := a.rowIndex[i]
+			end := a.rowIndex[i+1]
+			Axpy(alpha*x[i], a.values[start:end], a.columns[start:end], y, incy)
 		}
-		y[i*incy] = sum
+	} else {
+		for i := 0; i < r; i++ {
+			sum := y[i*incy]
+			start := a.rowIndex[i]
+			end := a.rowIndex[i+1]
+			for k, j := range a.columns[start:end] {
+				sum += alpha * a.values[start+k] * x[j*incx]
+			}
+			y[i*incy] = sum
+		}
 	}
 }
