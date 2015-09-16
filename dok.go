@@ -42,7 +42,17 @@ func (m *DOK) Triplets() []Triplet {
 	return t
 }
 
-func dokMulMatVec(alpha float64, transA bool, a *DOK, x []float64, incx int, y []float64, incy int) {
+func dokMulMatVec(alpha float64, transA bool, a *DOK, x []float64, incx int, beta float64, y []float64, incy int) {
+	r, _ := a.Dims()
+	if beta == 0 {
+		for i := 0; i < r; i++ {
+			y[i*incy] = 0
+		}
+	} else {
+		for i := 0; i < r; i++ {
+			y[i*incy] *= beta
+		}
+	}
 	if transA {
 		for k, v := range a.data {
 			y[k[1]*incy] += alpha * v * x[k[0]*incx]

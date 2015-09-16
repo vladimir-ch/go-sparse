@@ -71,23 +71,49 @@ func (m *CSR) At(r, c int) float64 {
 	return 0
 }
 
-func csrMulMatVec(alpha float64, transA bool, a *CSR, x []float64, incx int, y []float64, incy int) {
+func csrMulMatVec(alpha float64, transA bool, a *CSR, x []float64, incx int, beta float64, y []float64, incy int) {
 	r, _ := a.Dims()
-	if transA {
-		for i := 0; i < r; i++ {
-			start := a.rowIndex[i]
-			end := a.rowIndex[i+1]
-			Axpy(alpha*x[i], a.values[start:end], a.columns[start:end], y, incy)
+	if beta != 0 {
+		if transA {
+			for i := 0; i < r; i++ {
+				y[i*incy] *= beta
+			}
+			for i := 0; i < r; i++ {
+				start := a.rowIndex[i]
+				end := a.rowIndex[i+1]
+				Axpy(alpha*x[i], a.values[start:end], a.columns[start:end], y, incy)
+			}
+		} else {
+			for i := 0; i < r; i++ {
+				sum := beta * y[i*incy]
+				start := a.rowIndex[i]
+				end := a.rowIndex[i+1]
+				for k, j := range a.columns[start:end] {
+					sum += alpha * a.values[start+k] * x[j*incx]
+				}
+				y[i*incy] = sum
+			}
 		}
 	} else {
-		for i := 0; i < r; i++ {
-			sum := y[i*incy]
-			start := a.rowIndex[i]
-			end := a.rowIndex[i+1]
-			for k, j := range a.columns[start:end] {
-				sum += alpha * a.values[start+k] * x[j*incx]
+		if transA {
+			for i := 0; i < r; i++ {
+				y[i*incy] = 0
 			}
-			y[i*incy] = sum
+			for i := 0; i < r; i++ {
+				start := a.rowIndex[i]
+				end := a.rowIndex[i+1]
+				Axpy(alpha*x[i], a.values[start:end], a.columns[start:end], y, incy)
+			}
+		} else {
+			for i := 0; i < r; i++ {
+				start := a.rowIndex[i]
+				end := a.rowIndex[i+1]
+				var sum float64
+				for k, j := range a.columns[start:end] {
+					sum += alpha * a.values[start+k] * x[j*incx]
+				}
+				y[i*incy] = sum
+			}
 		}
 	}
 }

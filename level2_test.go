@@ -105,7 +105,7 @@ func TestMulMatVec(t *testing.T) {
 		}
 		y := make([]float64, test.r*test.incy)
 
-		MulMatVec(test.alpha, test.trans, dok, test.x, test.incx, y, test.incy)
+		MulMatVec(test.alpha, test.trans, dok, test.x, test.incx, 1, y, test.incy)
 		if !reflect.DeepEqual(y, test.want) {
 			t.Errorf("test %d: unexpected result for DOK", id+1)
 		}
@@ -114,7 +114,7 @@ func TestMulMatVec(t *testing.T) {
 			y[i] = 0
 		}
 		csr := NewCSR(dok)
-		MulMatVec(test.alpha, test.trans, csr, test.x, test.incx, y, test.incy)
+		MulMatVec(test.alpha, test.trans, csr, test.x, test.incx, 1, y, test.incy)
 		if !reflect.DeepEqual(y, test.want) {
 			t.Errorf("test %d: unexpected result for CSR", id+1)
 		}
