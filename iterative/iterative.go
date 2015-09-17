@@ -113,6 +113,9 @@ func Solve(a sparse.Matrix, b, xInit []float64, settings *Settings, method Metho
 func iterate(method Method, a sparse.Matrix, b []float64, settings *Settings, ctx *Context, stats *Stats) error {
 	dim := len(ctx.X)
 	bNorm := floats.Norm(b, 2)
+	if bNorm == 0 {
+		bNorm = 1
+	}
 
 	request := method.Init(ctx)
 	for {
@@ -143,61 +146,6 @@ func iterate(method Method, a sparse.Matrix, b []float64, settings *Settings, ct
 
 		request = method.Iterate(ctx)
 	}
-}
-
-type CG struct {
-	first     bool
-	resume    int
-	rho, rho1 float64
-}
-
-func (cg *CG) Init(ctx *Context) RequestType {
-	cg.first = true
-	cg.resume = 1
-	cg.rho = math.NaN()
-	cg.rho1 = math.NaN()
-
-	ctx.P = resize(ctx.P, len(ctx.X))
-
-	return NoRequest
-}
-
-func (cg *CG) Iterate(ctx *Context) RequestType {
-	switch cg.resume {
-	case 1:
-		cg.resume = 2
-		return SolvePreconditioner
-		// Solve M z = r_{i-1}
-	case 2:
-		// ρ_i = r_{i-1} · z
-		cg.rho = floats.Dot(ctx.Residual, ctx.Z)
-		if !cg.first {
-			// β = ρ_i / ρ_{i-1}
-			beta := cg.rho / cg.rho1
-			// z = z + β p_{i-1}
-			floats.AddScaled(ctx.Z, beta, ctx.P)
-		}
-		cg.first = false
-		// p_i = z
-		copy(ctx.P, ctx.Z)
-
-		cg.resume = 3
-		return ComputeAp
-		// Compute Ap
-	case 3:
-		// α = ρ_i / (p_i · Ap_i)
-		alpha := cg.rho / floats.Dot(ctx.P, ctx.Ap)
-		// x_i = x_{i-1} + α p_i
-		floats.AddScaled(ctx.X, alpha, ctx.P)
-		// r_i = r_{i-1} - α Ap_i
-		floats.AddScaled(ctx.Residual, -alpha, ctx.Ap)
-
-		cg.rho1 = cg.rho
-
-		cg.resume = 1
-		return CheckConvergence
-	}
-	panic("unreachable")
 }
 
 // resize resizes x to the length dim, reusing its memory if possible.
