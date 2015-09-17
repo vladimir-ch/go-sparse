@@ -16,7 +16,7 @@ type CG struct {
 	rho, rho1 float64
 }
 
-func (cg *CG) Init(ctx *Context) RequestType {
+func (cg *CG) Init(ctx *Context) Operation {
 	cg.first = true
 	cg.rho = math.NaN()
 	cg.rho1 = math.NaN()
@@ -28,7 +28,7 @@ func (cg *CG) Init(ctx *Context) RequestType {
 	// Solve M z = r_{i-1}
 }
 
-func (cg *CG) Iterate(ctx *Context) RequestType {
+func (cg *CG) Iterate(ctx *Context) Operation {
 	switch cg.resume {
 	case 1:
 		cg.resume = 2

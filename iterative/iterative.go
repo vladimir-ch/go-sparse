@@ -14,18 +14,18 @@ import (
 	"github.com/vladimir-ch/sparse"
 )
 
-type RequestType uint64
+type Operation uint64
 
 const (
-	NoRequest RequestType = 0
-	ComputeAp RequestType = 1 << (iota - 1)
+	NoOperation Operation = 0
+	ComputeAp   Operation = 1 << (iota - 1)
 	SolvePreconditioner
 	CheckConvergence
 )
 
 type Method interface {
-	Init(*Context) RequestType
-	Iterate(*Context) RequestType
+	Init(*Context) Operation
+	Iterate(*Context) Operation
 }
 
 type Stats struct {
@@ -120,7 +120,7 @@ func iterate(method Method, a sparse.Matrix, b []float64, settings *Settings, ct
 	request := method.Init(ctx)
 	for {
 		switch request {
-		case NoRequest:
+		case NoOperation:
 
 		case ComputeAp:
 			ctx.Ap = resize(ctx.Ap, dim)
