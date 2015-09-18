@@ -21,7 +21,7 @@ func TestCSR(t *testing.T) {
 		},
 		{
 			r: 4,
-			c: 2,
+			c: 3,
 			i: []int{0, 1, 3, 2, 3},
 			j: []int{1, 0, 0, 2, 1},
 			v: []float64{1, 2, 3, 4, 5},
@@ -29,7 +29,7 @@ func TestCSR(t *testing.T) {
 	} {
 		dok := NewDOK(test.r, test.c)
 		for i := 0; i < len(test.v); i++ {
-			dok.Set(test.i[i], test.j[i], test.v[i])
+			dok.InsertEntry(test.i[i], test.j[i], test.v[i])
 		}
 
 		csr := NewCSR(dok)

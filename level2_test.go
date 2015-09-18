@@ -101,7 +101,7 @@ func TestMulMatVec(t *testing.T) {
 	} {
 		dok := NewDOK(test.r, test.c)
 		for i := 0; i < len(test.v); i++ {
-			dok.Set(test.i[i], test.j[i], test.v[i])
+			dok.InsertEntry(test.i[i], test.j[i], test.v[i])
 		}
 		y := make([]float64, test.r*test.incy)
 

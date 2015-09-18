@@ -4,9 +4,10 @@
 
 package sparse
 
-type Matrix interface {
-	Dims() (r, c int)
-	At(r, c int) float64
+type MatrixProperties struct {
+	Symmetric       bool
+	LowerTriangular bool
+	UpperTriangular bool
 }
 
 type Triplet struct {

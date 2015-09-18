@@ -4,17 +4,21 @@
 
 package sparse
 
+import "fmt"
+
+type Index [2]int
+
 type DOK struct {
 	rows, cols int
-
-	data map[[2]int]float64
+	data       map[Index]float64
+	props      MatrixProperties
 }
 
 func NewDOK(r, c int) *DOK {
 	return &DOK{
 		rows: r,
 		cols: c,
-		data: make(map[[2]int]float64),
+		data: make(map[Index]float64),
 	}
 }
 
@@ -23,15 +27,43 @@ func (m *DOK) Dims() (r, c int) {
 }
 
 func (m *DOK) At(r, c int) float64 {
-	return m.data[[2]int{r, c}]
+	if r >= m.rows || r < 0 {
+		panic("sparse: row index out of range")
+	}
+	if c >= m.cols || c < 0 {
+		panic("sparse: column index out of range")
+	}
+
+	return m.data[Index{r, c}]
 }
 
-func (m *DOK) Set(r, c int, v float64) {
-	m.data[[2]int{r, c}] = v
+func (m *DOK) Properties() MatrixProperties {
+	return m.props
 }
 
-func (m *DOK) Add(r, c int, v float64) {
-	m.data[[2]int{r, c}] += v
+func (m *DOK) SetSparse(r, c int, v float64) {
+	if r >= m.rows || r < 0 {
+		panic("sparse: row index out of range")
+	}
+	if c >= m.cols || c < 0 {
+		panic("sparse: column index out of range")
+	}
+
+	if _, exists := m.data[Index{r, c}]; !exists {
+		panic(fmt.Sprintf("sparse: entry at (%d,%d) does not exist", r, c))
+	}
+	m.data[Index{r, c}] = v
+}
+
+func (m *DOK) InsertEntry(r, c int, v float64) {
+	if r >= m.rows || r < 0 {
+		panic("sparse: row index out of range")
+	}
+	if c >= m.cols || c < 0 {
+		panic("sparse: column index out of range")
+	}
+
+	m.data[Index{r, c}] = v
 }
 
 func (m *DOK) Triplets() []Triplet {

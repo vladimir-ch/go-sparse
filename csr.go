@@ -63,6 +63,13 @@ func (m *CSR) Dims() (r, c int) {
 }
 
 func (m *CSR) At(r, c int) float64 {
+	if r >= m.rows || r < 0 {
+		panic("sparse: row index out of range")
+	}
+	if c >= m.cols || c < 0 {
+		panic("sparse: column index out of range")
+	}
+
 	for j := m.rowIndex[r]; j < m.rowIndex[r+1]; j++ {
 		if m.columns[j] == c {
 			return m.values[j]
