@@ -125,37 +125,38 @@ func TestGather(t *testing.T) {
 }
 
 func TestGatherZero(t *testing.T) {
-	for j, test := range []struct {
-		x, y  []float64
-		index []int
-		incy  int
+	for i, test := range []struct {
+		y       []float64
+		indices []int
 
 		want []float64
 	}{
 		{
-			x:     []float64{math.NaN(), math.NaN(), math.NaN()},
-			index: []int{0, 2, 3},
-			y:     []float64{1, 2, 3, 4},
-			incy:  1,
+			y:       []float64{1, 2, 3, 4},
+			indices: []int{0, 2, 3},
 
 			want: []float64{1, 3, 4},
 		},
 		{
-			x:     []float64{math.NaN(), math.NaN(), math.NaN()},
-			index: []int{0, 2, 3},
-			y:     []float64{1, 2, 3, 4, 5, 6, 7, 8},
-			incy:  2,
+			y:       []float64{1, 2, 3, 4, 5, 6, 7, 8},
+			indices: []int{2, 4, 6},
 
-			want: []float64{1, 5, 7},
+			want: []float64{3, 5, 7},
 		},
 	} {
-		GatherZero(test.y, test.incy, test.x, test.index)
-		if !reflect.DeepEqual(test.x, test.want) {
-			t.Errorf("want = %v, got %v\n", test.want, test.x)
+		y := mat64.NewVector(len(test.y), test.y)
+		var x Vector
+		GatherZero(&x, y, test.indices)
+
+		if x.N != y.Len() {
+			t.Errorf("%d: wrong dimension, want = %v, got = %v ", i, y.Len(), x.N)
 		}
-		for _, idx := range test.index {
-			if test.y[idx*test.incy] != 0 {
-				t.Errorf("test %d: %d-th element not set to zero", j, idx*test.incy)
+		if !reflect.DeepEqual(x.Data, test.want) {
+			t.Errorf("%d: data not equal, want = %v, got %v\n", i, test.want, x.Data)
+		}
+		for _, index := range test.indices {
+			if test.y[index] != 0 {
+				t.Errorf("%d: %d-th element not set to zero", i, index)
 			}
 		}
 	}
