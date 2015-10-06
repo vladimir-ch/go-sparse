@@ -35,3 +35,14 @@ func (v *Vector) InsertEntry(val float64, i int) {
 	v.Data = append(v.Data, val)
 	v.Indices = append(v.Indices, i)
 }
+
+func (v *Vector) reuseAs(n, nnz int) {
+	v.N = n
+	if cap(v.Data) >= nnz {
+		v.Data = v.Data[:nnz]
+		v.Indices = v.Indices[:nnz]
+	} else {
+		v.Data = make([]float64, nnz)
+		v.Indices = make([]int, nnz)
+	}
+}
