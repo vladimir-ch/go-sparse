@@ -4,35 +4,34 @@
 
 package sparse
 
+// Vector is a sparse vector represented by a slice of non-zero values and a
+// slice denoting their indices.
 type Vector struct {
-	n      int
-	values []float64
-	index  []int
+	N       int       // Dimension of the vector.
+	Data    []float64 // Non-zero values.
+	Indices []int     // Indices of values in Data. Must be zero-based and unique.
 }
 
-func NewVector(n int, values []float64, indices []int) *Vector {
-	if len(values) != len(indices) {
-		panic("slice length mismatch")
+// NewVector returns a new Vector of dimension n. If data and indices have the
+// same length which is greater than or equal to n, they are used as the
+// non-zero values of the vector and their indices, respectively, otherwise
+// NewVector will panic. Indices must be unique, although no checking is done.
+func NewVector(n int, data []float64, indices []int) *Vector {
+	if len(data) != len(indices) {
+		panic("sparse: slice length mismatch")
 	}
-	if n < len(values) {
-		panic("vector dimension is less than the number of entries")
+	if n < len(data) {
+		panic("sparse: vector dimension is less than the number of entries")
 	}
 	return &Vector{
-		n:      n,
-		values: values,
-		index:  indices,
+		N:       n,
+		Data:    data,
+		Indices: indices,
 	}
 }
 
-func (v *Vector) Dim() int {
-	return v.n
-}
-
-func (v *Vector) NonZeros() int {
-	return len(v.values)
-}
-
-func (v *Vector) InsertEntry(value float64, index int) {
-	v.values = append(v.values, value)
-	v.index = append(v.index, index)
+// InsertEntry appends the value v with index i to the Vector.
+func (v *Vector) InsertEntry(val float64, i int) {
+	v.Data = append(v.Data, val)
+	v.Indices = append(v.Indices, i)
 }
