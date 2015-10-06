@@ -47,8 +47,9 @@ func Gather(x *Vector, y *mat64.Vector, indices []int) {
 	}
 
 	x.reuseAs(y.Len(), len(indices))
+	copy(x.Indices, indices)
 	raw := y.RawVector()
-	for i, index := range indices {
+	for i, index := range x.Indices {
 		x.Data[i] = raw.Data[index*raw.Inc]
 	}
 }
@@ -61,8 +62,9 @@ func GatherZero(x *Vector, y *mat64.Vector, indices []int) {
 	}
 
 	x.reuseAs(y.Len(), len(indices))
+	copy(x.Indices, indices)
 	raw := y.RawVector()
-	for i, index := range indices {
+	for i, index := range x.Indices {
 		x.Data[i] = raw.Data[index*raw.Inc]
 		raw.Data[index*raw.Inc] = 0
 	}

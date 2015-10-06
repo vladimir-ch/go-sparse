@@ -121,6 +121,9 @@ func TestGather(t *testing.T) {
 		if !reflect.DeepEqual(x.Data, test.want) {
 			t.Errorf("%d: data not equal, want = %v, got %v\n", i, test.want, x.Data)
 		}
+		if !reflect.DeepEqual(x.Indices, test.indices) {
+			t.Errorf("%d: indices not equal, want = %v, got %v\n", i, test.indices, x.Indices)
+		}
 	}
 }
 
@@ -153,6 +156,9 @@ func TestGatherZero(t *testing.T) {
 		}
 		if !reflect.DeepEqual(x.Data, test.want) {
 			t.Errorf("%d: data not equal, want = %v, got %v\n", i, test.want, x.Data)
+		}
+		if !reflect.DeepEqual(x.Indices, test.indices) {
+			t.Errorf("%d: indices not equal, want = %v, got %v\n", i, test.indices, x.Indices)
 		}
 		for _, index := range test.indices {
 			if test.y[index] != 0 {
