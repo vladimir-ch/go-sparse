@@ -21,21 +21,18 @@ func Dot(x *Vector, y *mat64.Vector) (dot float64) {
 }
 
 // Axpy scales the sparse vector x by alpha and adds the result to the dense
-// vector y, i.e., it computes
-//
-//  y[index[i]*incy] += alpha*x[i]
-//
-// If alpha is zero, y is not modified.
-func Axpy(alpha float64, x []float64, index []int, y []float64, incy int) {
-	if len(x) != len(index) {
-		panic("sparse: slice length mismatch")
+// vector y. If alpha is zero, y is not modified.
+func Axpy(y *mat64.Vector, alpha float64, x *Vector) {
+	if x.N != y.Len() {
+		panic("sparse: vector dimension mismatch")
 	}
 
 	if alpha == 0 {
 		return
 	}
-	for i, idx := range index {
-		y[idx*incy] += alpha * x[i]
+	raw := y.RawVector()
+	for i, index := range x.Indices {
+		raw.Data[index*raw.Inc] += alpha * x.Data[i]
 	}
 }
 

@@ -39,54 +39,44 @@ func TestDot(t *testing.T) {
 }
 
 func TestAxpy(t *testing.T) {
-	for _, test := range []struct {
-		a     float64
-		x, y  []float64
-		index []int
-		incy  int
+	for i, test := range []struct {
+		alpha   float64
+		x, y    []float64
+		indices []int
 
 		want []float64
 	}{
 		{
-			a:     1,
-			x:     []float64{1, 2, 3},
-			index: []int{0, 2, 3},
-			y:     []float64{0, 0, 0, 0},
-			incy:  1,
+			alpha:   0,
+			x:       []float64{1, 2, 3},
+			indices: []int{0, 2, 3},
+			y:       []float64{6, 7, 8, 9},
+
+			want: []float64{6, 7, 8, 9},
+		},
+		{
+			alpha:   1,
+			x:       []float64{1, 2, 3},
+			indices: []int{0, 2, 3},
+			y:       []float64{0, 0, 0, 0},
 
 			want: []float64{1, 0, 2, 3},
 		},
 		{
-			a:     2,
-			x:     []float64{1, 2, 3},
-			index: []int{0, 2, 3},
-			y:     []float64{0, 0, 0, 0},
-			incy:  1,
+			alpha:   2,
+			x:       []float64{1, 2, 3},
+			indices: []int{0, 2, 3},
+			y:       []float64{0, 0, 0, 0},
 
 			want: []float64{2, 0, 4, 6},
 		},
-		{
-			a:     2,
-			x:     []float64{1, 2, 3},
-			index: []int{0, 2, 3},
-			y:     []float64{0, 0, 0, 0, 0, 0, 0, 0},
-			incy:  2,
-
-			want: []float64{2, 0, 0, 0, 4, 0, 6, 0},
-		},
-		{
-			a:     2,
-			x:     []float64{1, 2, 3},
-			index: []int{0, 2, 3},
-			y:     []float64{1, 2, 3, 4, 5, 6, 7, 8},
-			incy:  2,
-
-			want: []float64{3, 2, 3, 4, 9, 6, 13, 8},
-		},
 	} {
-		Axpy(test.a, test.x, test.index, test.y, test.incy)
+		x := NewVector(len(test.y), test.x, test.indices)
+		y := mat64.NewVector(len(test.y), test.y)
+
+		Axpy(y, test.alpha, x)
 		if !reflect.DeepEqual(test.y, test.want) {
-			t.Errorf("want = %v, got %v\n", test.want, test.y)
+			t.Errorf("%d: want = %v, got %v\n", i, test.want, test.y)
 		}
 	}
 }
