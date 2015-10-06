@@ -71,16 +71,14 @@ func GatherZero(x *Vector, y *mat64.Vector, indices []int) {
 }
 
 // Scatter copies the values of x into the corresponding locations in the dense
-// vector y, i.e., it assigns
-//
-//  y[index[i]*incy] = x[i]
-//
-func Scatter(x []float64, index []int, y []float64, incy int) {
-	if len(x) != len(index) {
-		panic("sparse: slice length mismatch")
+// vector y. Both vectors must have the same dimension.
+func Scatter(y *mat64.Vector, x *Vector) {
+	if x.N != y.Len() {
+		panic("sparse: vector dimension mismatch")
 	}
 
-	for i, idx := range index {
-		y[idx*incy] = x[i]
+	raw := y.RawVector()
+	for i, index := range x.Indices {
+		raw.Data[index*raw.Inc] = x.Data[i]
 	}
 }

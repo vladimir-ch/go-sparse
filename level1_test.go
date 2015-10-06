@@ -169,33 +169,33 @@ func TestGatherZero(t *testing.T) {
 }
 
 func TestScatter(t *testing.T) {
-	for _, test := range []struct {
-		x, y  []float64
-		index []int
-		incy  int
+	for i, test := range []struct {
+		x, y    []float64
+		indices []int
 
 		want []float64
 	}{
 		{
-			x:     []float64{1, 2, 3},
-			index: []int{0, 2, 3},
-			y:     []float64{math.NaN(), 0, math.NaN(), math.NaN()},
-			incy:  1,
+			x:       []float64{1, 2, 3},
+			indices: []int{0, 2, 3},
+			y:       []float64{math.NaN(), 0, math.NaN(), math.NaN()},
 
 			want: []float64{1, 0, 2, 3},
 		},
 		{
-			x:     []float64{1, 2, 3},
-			index: []int{0, 2, 3},
-			y:     []float64{math.NaN(), 0, 0, 0, math.NaN(), 0, math.NaN(), 0},
-			incy:  2,
+			x:       []float64{1, 2, 3},
+			indices: []int{0, 4, 6},
+			y:       []float64{math.NaN(), 0, 0, 0, math.NaN(), 0, math.NaN(), 0},
 
 			want: []float64{1, 0, 0, 0, 2, 0, 3, 0},
 		},
 	} {
-		Scatter(test.x, test.index, test.y, test.incy)
+		y := mat64.NewVector(len(test.y), test.y)
+		x := NewVector(len(test.y), test.x, test.indices)
+
+		Scatter(y, x)
 		if !reflect.DeepEqual(test.y, test.want) {
-			t.Errorf("want = %v, got %v\n", test.want, test.y)
+			t.Errorf("%d: want = %v, got %v\n", i, test.want, test.y)
 		}
 	}
 }
