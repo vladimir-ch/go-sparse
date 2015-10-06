@@ -4,21 +4,20 @@
 
 package sparse
 
-// Dot computes the dot product of sparse vector x with dense vector y, i.e.,
-// it computes
-//
-//  sum (i = 0 to len(index)-1) x[i] * y[index[i]*incy]
-//
-func Dot(x []float64, index []int, y []float64, incy int) float64 {
-	if len(x) != len(index) {
-		panic("sparse: slice length mismatch")
+import "github.com/gonum/matrix/mat64"
+
+// Dot computes the dot product of the sparse vector x with the dense vector y.
+// The vectors must have the same dimension.
+func Dot(x *Vector, y *mat64.Vector) (dot float64) {
+	if x.N != y.Len() {
+		panic("sparse: vector dimension mismatch")
 	}
 
-	var r float64
-	for i, idx := range index {
-		r += x[i] * y[idx*incy]
+	raw := y.RawVector()
+	for i, index := range x.Indices {
+		dot += x.Data[i] * raw.Data[index*raw.Inc]
 	}
-	return r
+	return
 }
 
 // Axpy scales the sparse vector x by alpha and adds the result to the dense

@@ -8,42 +8,30 @@ import (
 	"math"
 	"reflect"
 	"testing"
+
+	"github.com/gonum/matrix/mat64"
 )
 
 func TestDot(t *testing.T) {
 	for _, test := range []struct {
-		x, y  []float64
-		index []int
-		incy  int
+		n       int
+		x, y    []float64
+		indices []int
 
 		want float64
 	}{
 		{
-			x:     []float64{1, 2, 3},
-			index: []int{0, 2, 4},
-			y:     []float64{1, math.NaN(), 3, math.NaN(), 5},
-			incy:  1,
+			n:       5,
+			x:       []float64{1, 2, 3},
+			indices: []int{0, 2, 4},
+			y:       []float64{1, math.NaN(), 3, math.NaN(), 5},
 
 			want: 22,
-		},
-		{
-			x:     []float64{1, 2, 3},
-			index: []int{0, 2, 4},
-			y:     []float64{1, math.NaN(), 3, math.NaN(), 5},
-			incy:  1,
-
-			want: 22,
-		},
-		{
-			x:     []float64{1, 2, 3},
-			index: []int{0, 2, 4},
-			y:     []float64{1, math.NaN(), math.NaN(), math.NaN(), 5, math.NaN(), math.NaN(), math.NaN(), 9},
-			incy:  2,
-
-			want: 38,
 		},
 	} {
-		got := Dot(test.x, test.index, test.y, test.incy)
+		x := NewVector(test.n, test.x, test.indices)
+		y := mat64.NewVector(len(test.y), test.y)
+		got := Dot(x, y)
 		if got != test.want {
 			t.Errorf("want = %v, got %v\n", test.want, got)
 		}
