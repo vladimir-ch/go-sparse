@@ -39,18 +39,17 @@ func Axpy(alpha float64, x []float64, index []int, y []float64, incy int) {
 	}
 }
 
-// Gather gathers entries given by index of the dense vector y into the sparse
-// vector x, i.e., it assigns
-//
-//  x[i] = y[index[i]*incy]
-//
-func Gather(y []float64, incy int, x []float64, index []int) {
-	if len(x) != len(index) {
-		panic("sparse: slice length mismatch")
+// Gather gathers entries given by indices of the dense vector y into the sparse
+// vector x. Indices must not be nil.
+func Gather(x *Vector, y *mat64.Vector, indices []int) {
+	if indices == nil {
+		panic("sparse: slice is nil")
 	}
 
-	for i, idx := range index {
-		x[i] = y[idx*incy]
+	x.reuseAs(y.Len(), len(indices))
+	raw := y.RawVector()
+	for i, index := range indices {
+		x.Data[i] = raw.Data[index*raw.Inc]
 	}
 }
 
