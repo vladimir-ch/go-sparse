@@ -4,7 +4,11 @@
 
 package sparse
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/gonum/matrix/mat64"
+)
 
 type Index [2]int
 
@@ -74,24 +78,31 @@ func (m *DOK) Triplets() []Triplet {
 	return t
 }
 
-func dokMulMatVec(alpha float64, transA bool, a *DOK, x []float64, incx int, beta float64, y []float64, incy int) {
-	r, _ := a.Dims()
-	if beta == 0 {
-		for i := 0; i < r; i++ {
-			y[i*incy] = 0
+func dokMulMatVec(y *mat64.Vector, alpha float64, transA bool, a *DOK, x *mat64.Vector) {
+	r, c := a.Dims()
+	if transA {
+		if r != x.Len() || c != y.Len() {
+			panic("sparse: dimension mismatch")
 		}
 	} else {
-		for i := 0; i < r; i++ {
-			y[i*incy] *= beta
+		if r != y.Len() || c != x.Len() {
+			panic("sparse: dimension mismatch")
 		}
 	}
+
+	if alpha == 0 {
+		return
+	}
+
+	xRaw := x.RawVector()
+	yRaw := y.RawVector()
 	if transA {
-		for k, v := range a.data {
-			y[k[1]*incy] += alpha * v * x[k[0]*incx]
+		for ij, aij := range a.data {
+			yRaw.Data[ij[1]*yRaw.Inc] += alpha * aij * xRaw.Data[ij[0]*xRaw.Inc]
 		}
 	} else {
-		for k, v := range a.data {
-			y[k[0]*incy] += alpha * v * x[k[1]*incx]
+		for ij, aij := range a.data {
+			yRaw.Data[ij[0]*yRaw.Inc] += alpha * aij * xRaw.Data[ij[1]*xRaw.Inc]
 		}
 	}
 }
