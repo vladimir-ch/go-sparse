@@ -4,7 +4,11 @@
 
 package sparse
 
-import "sort"
+import (
+	"sort"
+
+	"github.com/gonum/matrix/mat64"
+)
 
 type CSR struct {
 	rows, cols int
@@ -78,49 +82,40 @@ func (m *CSR) At(r, c int) float64 {
 	return 0
 }
 
-func csrMulMatVec(alpha float64, transA bool, a *CSR, x []float64, incx int, beta float64, y []float64, incy int) {
-	r, _ := a.Dims()
-	if beta != 0 {
-		if transA {
-			for i := 0; i < r; i++ {
-				y[i*incy] *= beta
-			}
-			for i := 0; i < r; i++ {
-				start := a.rowIndex[i]
-				end := a.rowIndex[i+1]
-				Axpy(alpha*x[i], a.values[start:end], a.columns[start:end], y, incy)
-			}
-		} else {
-			for i := 0; i < r; i++ {
-				sum := beta * y[i*incy]
-				start := a.rowIndex[i]
-				end := a.rowIndex[i+1]
-				for k, j := range a.columns[start:end] {
-					sum += alpha * a.values[start+k] * x[j*incx]
-				}
-				y[i*incy] = sum
-			}
+func csrMulMatVec(y *mat64.Vector, alpha float64, transA bool, a *CSR, x *mat64.Vector) {
+	r, c := a.Dims()
+	if transA {
+		if r != x.Len() || c != y.Len() {
+			panic("sparse: dimension mismatch")
 		}
 	} else {
-		if transA {
-			for i := 0; i < r; i++ {
-				y[i*incy] = 0
-			}
-			for i := 0; i < r; i++ {
-				start := a.rowIndex[i]
-				end := a.rowIndex[i+1]
-				Axpy(alpha*x[i], a.values[start:end], a.columns[start:end], y, incy)
-			}
-		} else {
-			for i := 0; i < r; i++ {
-				start := a.rowIndex[i]
-				end := a.rowIndex[i+1]
-				var sum float64
-				for k, j := range a.columns[start:end] {
-					sum += alpha * a.values[start+k] * x[j*incx]
-				}
-				y[i*incy] = sum
-			}
+		if r != y.Len() || c != x.Len() {
+			panic("sparse: dimension mismatch")
+		}
+	}
+
+	if alpha == 0 {
+		return
+	}
+
+	yRaw := y.RawVector()
+	if transA {
+		row := Vector{N: y.Len()}
+		for i := 0; i < r; i++ {
+			start := a.rowIndex[i]
+			end := a.rowIndex[i+1]
+			row.Data = a.values[start:end]
+			row.Indices = a.columns[start:end]
+			Axpy(y, alpha*x.At(i, 0), &row)
+		}
+	} else {
+		row := Vector{N: x.Len()}
+		for i := 0; i < r; i++ {
+			start := a.rowIndex[i]
+			end := a.rowIndex[i+1]
+			row.Data = a.values[start:end]
+			row.Indices = a.columns[start:end]
+			yRaw.Data[i*yRaw.Inc] += alpha * Dot(&row, x)
 		}
 	}
 }
