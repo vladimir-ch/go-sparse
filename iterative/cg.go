@@ -7,7 +7,7 @@ package iterative
 import (
 	"math"
 
-	"github.com/gonum/floats"
+	"github.com/gonum/matrix/mat64"
 )
 
 type CG struct {
@@ -21,7 +21,16 @@ func (cg *CG) Init(ctx *Context) Operation {
 	cg.rho = math.NaN()
 	cg.rho1 = math.NaN()
 
-	ctx.P = resize(ctx.P, len(ctx.X))
+	dim := ctx.X.Len()
+	if ctx.P == nil || ctx.P.Len() != dim {
+		ctx.P = mat64.NewVector(dim, nil)
+	}
+	if ctx.Ap == nil || ctx.Ap.Len() != dim {
+		ctx.Ap = mat64.NewVector(dim, nil)
+	}
+	if ctx.Z == nil || ctx.Z.Len() != dim {
+		ctx.Z = mat64.NewVector(dim, nil)
+	}
 
 	cg.resume = 2
 	return SolvePreconditioner
@@ -36,27 +45,27 @@ func (cg *CG) Iterate(ctx *Context) Operation {
 		// Solve M z = r_{i-1}
 	case 2:
 		// ρ_i = r_{i-1} · z
-		cg.rho = floats.Dot(ctx.Residual, ctx.Z)
+		cg.rho = mat64.Dot(ctx.Residual, ctx.Z)
 		if !cg.first {
 			// β = ρ_i / ρ_{i-1}
 			beta := cg.rho / cg.rho1
 			// z = z + β p_{i-1}
-			floats.AddScaled(ctx.Z, beta, ctx.P)
+			ctx.Z.AddScaledVec(ctx.Z, beta, ctx.P)
 		}
 		cg.first = false
 		// p_i = z
-		copy(ctx.P, ctx.Z)
+		ctx.P.CopyVec(ctx.Z)
 
 		cg.resume = 3
 		return ComputeAp
 		// Compute Ap
 	case 3:
 		// α = ρ_i / (p_i · Ap_i)
-		alpha := cg.rho / floats.Dot(ctx.P, ctx.Ap)
+		alpha := cg.rho / mat64.Dot(ctx.P, ctx.Ap)
 		// x_i = x_{i-1} + α p_i
-		floats.AddScaled(ctx.X, alpha, ctx.P)
+		ctx.X.AddScaledVec(ctx.X, alpha, ctx.P)
 		// r_i = r_{i-1} - α Ap_i
-		floats.AddScaled(ctx.Residual, -alpha, ctx.Ap)
+		ctx.Residual.AddScaledVec(ctx.Residual, -alpha, ctx.Ap)
 
 		cg.rho1 = cg.rho
 

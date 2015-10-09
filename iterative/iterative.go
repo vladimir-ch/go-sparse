@@ -10,7 +10,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/gonum/floats"
+	"github.com/gonum/matrix/mat64"
 	"github.com/vladimir-ch/sparse"
 )
 
@@ -37,17 +37,17 @@ type Stats struct {
 }
 
 type Result struct {
-	X       []float64
+	X       *mat64.Vector
 	Stats   Stats
 	Runtime time.Duration
 }
 
 type Context struct {
-	X        []float64
-	Residual []float64
-	P        []float64
-	Ap       []float64
-	Z        []float64
+	X        *mat64.Vector
+	Residual *mat64.Vector
+	P        *mat64.Vector
+	Ap       *mat64.Vector
+	Z        *mat64.Vector
 }
 
 type Settings struct {
@@ -62,43 +62,44 @@ func DefaultSettings(dim int) *Settings {
 	}
 }
 
-func Solve(a sparse.Matrix, b, xInit []float64, settings *Settings, method Method) (result Result, err error) {
+func Solve(a sparse.Matrix, b, xInit *mat64.Vector, settings *Settings, method Method) (result Result, err error) {
 	stats := Stats{
 		StartTime: time.Now(),
 	}
 
-	dim := len(xInit)
-	if dim == 0 {
-		panic("iterative: invalid dimension")
-	}
-
-	r, c := a.Dims()
-	if r != c {
+	dim, c := a.Dims()
+	if dim != c {
 		panic("iterative: matrix is not square")
 	}
-	if c != dim {
-		panic("iterative: mismatched size of the matrix")
+	if xInit != nil && dim != xInit.Len() {
+		panic("iterative: mismatched size of the initial guess")
 	}
-	if len(b) != dim {
+	if b.Len() != dim {
 		panic("iterative: mismatched size of the right-hand side vector")
 	}
 
+	if xInit == nil {
+		xInit = mat64.NewVector(dim, nil)
+	}
 	if settings == nil {
 		settings = DefaultSettings(dim)
 	}
 
 	ctx := Context{
-		X:        make([]float64, dim),
-		Residual: make([]float64, dim),
+		X:        mat64.NewVector(dim, nil),
+		Residual: mat64.NewVector(dim, nil),
 	}
-	copy(ctx.X, xInit)
-	copy(ctx.Residual, b)
-	if floats.Norm(ctx.X, math.Inf(1)) > 0 {
-		sparse.MulMatVec(-1, false, a, ctx.X, 1, 1, ctx.Residual, 1)
+	// X = xInit
+	ctx.X.CopyVec(xInit)
+	if mat64.Norm(ctx.X, math.Inf(1)) > 0 {
+		// Residual = Ax
+		sparse.MulMatVec(ctx.Residual, 1, false, a, ctx.X)
 		stats.MatVecMultiplies++
 	}
+	// Residual = Ax - b
+	ctx.Residual.SubVec(ctx.Residual, b)
 
-	if floats.Norm(ctx.Residual, 2) >= settings.Tolerance {
+	if mat64.Norm(ctx.Residual, 2) >= settings.Tolerance {
 		err = iterate(method, a, b, settings, &ctx, &stats)
 	}
 
@@ -110,31 +111,31 @@ func Solve(a sparse.Matrix, b, xInit []float64, settings *Settings, method Metho
 	return result, err
 }
 
-func iterate(method Method, a sparse.Matrix, b []float64, settings *Settings, ctx *Context, stats *Stats) error {
-	dim := len(ctx.X)
-	bNorm := floats.Norm(b, 2)
+func iterate(method Method, a sparse.Matrix, b *mat64.Vector, settings *Settings, ctx *Context, stats *Stats) error {
+	bNorm := mat64.Norm(b, 2)
 	if bNorm == 0 {
 		bNorm = 1
 	}
 
-	request := method.Init(ctx)
+	op := method.Init(ctx)
 	for {
-		switch request {
+		switch op {
 		case NoOperation:
 
 		case ComputeAp:
-			ctx.Ap = resize(ctx.Ap, dim)
-			sparse.MulMatVec(1, false, a, ctx.P, 1, 0, ctx.Ap, 1)
+			ctx.Ap.ScaleVec(0, ctx.Ap)
+			sparse.MulMatVec(ctx.Ap, 1, false, a, ctx.P)
 			stats.MatVecMultiplies++
 
 		case SolvePreconditioner:
-			ctx.Z = resize(ctx.Z, dim)
-			copy(ctx.Z, ctx.Residual)
+			// TODO(vladimir-ch): Add preconditioners.
+			// Z = Residual
+			ctx.Z.CopyVec(ctx.Residual)
 			stats.PrecondionerSolves++
 
 		case CheckConvergence:
 			stats.Iterations++
-			stats.Residual = floats.Norm(ctx.Residual, 2) / bNorm
+			stats.Residual = mat64.Norm(ctx.Residual, 2) / bNorm
 			fmt.Println(stats.Residual)
 			if stats.Residual < settings.Tolerance {
 				return nil
@@ -144,14 +145,6 @@ func iterate(method Method, a sparse.Matrix, b []float64, settings *Settings, ct
 			}
 		}
 
-		request = method.Iterate(ctx)
+		op = method.Iterate(ctx)
 	}
-}
-
-// resize resizes x to the length dim, reusing its memory if possible.
-func resize(x []float64, dim int) []float64 {
-	if cap(x) >= dim {
-		return x[:dim]
-	}
-	return make([]float64, dim)
 }

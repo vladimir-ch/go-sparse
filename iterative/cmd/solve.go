@@ -13,6 +13,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gonum/blas/blas64"
+	"github.com/gonum/blas/native"
+	"github.com/gonum/matrix/mat64"
 	"github.com/vladimir-ch/sparse"
 	"github.com/vladimir-ch/sparse/iterative"
 )
@@ -42,6 +45,9 @@ func main() {
 		r = f
 	}
 
+	// blas64.Use(cgo.Implementation{})
+	blas64.Use(native.Implementation{})
+
 	var aDok *sparse.DOK
 	switch path.Ext(name) {
 	case ".mtx":
@@ -57,23 +63,24 @@ func main() {
 
 	a := sparse.NewCSR(aDok)
 	n, _ := a.Dims()
+
+	// Create the right-hand side so that the solution is [1 1 ... 1].
 	x := make([]float64, n)
 	for i := range x {
 		x[i] = 1
 	}
-	b := make([]float64, n)
-	sparse.MulMatVec(1, false, a, x, 1, 0, b, 1)
-	for i := range x {
-		x[i] = 0
-	}
-	result, err := iterative.Solve(a, b, x, nil, &iterative.CG{})
+	xVec := mat64.NewVector(n, x)
+	bVec := mat64.NewVector(n, make([]float64, n))
+	sparse.MulMatVec(bVec, 1, false, a, xVec)
+
+	result, err := iterative.Solve(a, bVec, nil, nil, &iterative.CG{})
 	if err != nil {
 		log.Fatal(err)
 	}
-	if len(result.X) > 10 {
-		fmt.Println("Solution[:10]:", result.X[:10])
+	if result.X.Len() > 10 {
+		fmt.Println("Solution[:10]:", result.X.RawVector().Data[:10])
 	} else {
-		fmt.Println("Solution:", result.X)
+		fmt.Println("Solution:", result.X.RawVector())
 	}
 }
 
@@ -131,9 +138,9 @@ func readMatrixMarket(r io.Reader) (*sparse.DOK, error) {
 			return nil, err
 		}
 
-		a.Set(i-1, j-1, v)
+		a.InsertEntry(i-1, j-1, v)
 		if i != j {
-			a.Set(j-1, i-1, v)
+			a.InsertEntry(j-1, i-1, v)
 		}
 		count++
 	}
