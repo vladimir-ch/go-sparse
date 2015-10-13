@@ -19,6 +19,7 @@ type Operation uint64
 const (
 	NoOperation Operation = 0
 	ComputeAp   Operation = 1 << (iota - 1)
+	ComputeAq
 	SolvePreconditioner
 	CheckConvergence
 )
@@ -47,6 +48,8 @@ type Context struct {
 	Residual *mat64.Vector
 	P        *mat64.Vector
 	Ap       *mat64.Vector
+	Q        *mat64.Vector
+	Aq       *mat64.Vector
 	Z        *mat64.Vector
 }
 
@@ -125,6 +128,11 @@ func iterate(method Method, a sparse.Matrix, b *mat64.Vector, settings *Settings
 		case ComputeAp:
 			ctx.Ap.ScaleVec(0, ctx.Ap)
 			sparse.MulMatVec(ctx.Ap, 1, false, a, ctx.P)
+			stats.MatVecMultiplies++
+
+		case ComputeAq:
+			ctx.Aq.ScaleVec(0, ctx.Aq)
+			sparse.MulMatVec(ctx.Aq, 1, false, a, ctx.Q)
 			stats.MatVecMultiplies++
 
 		case SolvePreconditioner:

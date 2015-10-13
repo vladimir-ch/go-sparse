@@ -71,6 +71,7 @@ func (cg *CG) Iterate(ctx *Context) Operation {
 
 		cg.resume = 1
 		return CheckConvergence
+	default:
+		panic("unreachable")
 	}
-	panic("unreachable")
 }
