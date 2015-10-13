@@ -12,10 +12,10 @@ type Vector struct {
 	Indices []int     // Indices of values in Data. Must be zero-based and unique.
 }
 
-// NewVector returns a new Vector of dimension n. If data and indices have the
-// same length which is greater than or equal to n, they are used as the
-// non-zero values of the vector and their indices, respectively, otherwise
-// NewVector will panic. Indices must be unique, although no checking is done.
+// NewVector returns a new Vector of dimension n with non-zero elements given
+// by data and indices. Both data and indices must have the same length smaller
+// than n, otherwise NewVector will panic. Indices must be unique, although no
+// checking is done.
 func NewVector(n int, data []float64, indices []int) *Vector {
 	if len(data) != len(indices) {
 		panic("sparse: slice length mismatch")
